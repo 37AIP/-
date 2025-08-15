@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>اهبدلي</title>
+<style>
+  :root{
+    --bg1:#0f172a; --bg2:#1e293b; --accent:#ffdd57; --primary:#6a5acd; --danger:#ef4444; --ok:#22c55e;
+    --card: rgba(255,255,255,0.08); --card2: rgba(255,255,255,0.12);
+  }
+  html,body{margin:0;padding:0;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:#f8fafc;font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+  #container{max-width:1100px;margin:24px auto;padding:28px;background:rgba(0,0,0,0.35);border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  h1{margin:0 0 18px;font-size:42px;color:var(--accent);text-align:center;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+  h2{margin:12px 0;font-size:22px}
+  .row{display:flex;flex-wrap:wrap;gap:12px}
+  .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
+  .card h3{margin:0 0 8px;font-size:18px}
+  label{display:block;margin:8px 0 6px;font-weight:600}
+  input[type="text"], select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;outline:none}
+  input::placeholder{color:#94a3b8}
+  button{padding:12px 18px;border:none;border-radius:12px;background:var(--primary);color:#fff;cursor:pointer;font-weight:700;transition:.2s}
+  button:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+  .ghost{background:transparent;border:1px dashed rgba(255,255,255,.25)}
+  .accent{background:var(--accent);color:#111827}
+  .danger{background:var(--danger)}
+  .ok{background:var(--ok);color:#0b1726}
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .grid{display:grid;gap:10px}
+  .grid-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .muted{color:#cbd5e1}
+  #questionBox{background:var(--card2);padding:16px;border-radius:14px;margin:10px 0}
+  .chip{display:inline-block;background:rgba(255,255,255,.12);padding:8px 12px;border-radius:999px;margin:4px 6px}
+  .choice{display:block;margin:8px 0}
+  .choice button{width:100%;text-align:center}
+  #results .item{background:rgba(255,255,255,.06);border-radius:12px;padding:10px;margin:6px 0}
+  #timerWrap{font-weight:800;font-size:18px;color:var(--accent)}
+  .footerBar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px}
+  .sep{height:1px;background:rgba(255,255,255,.12);margin:14px 0}
+  @media (max-width:720px){ .grid-3{grid-template-columns:1fr} .grid-2{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div id="container">
+  <h1>اهبدلي</h1>
+
+  <!-- الإعدادات -->
+  <div id="setup" class="stack">
+    <div class="card">
+      <h2>إعداد المباراة</h2>
+      <div class="grid grid-3">
+        <div>
+          <label>عدد الجولات (1-30)</label>
+          <select id="roundCount">
+            <!-- نولّد 1..30 -->
+          </select>
+        </div>
+        <div>
+          <label>عدد اللاعبين لكل فريق (1-5)</label>
+          <select id="teamSize">
+            <option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option>
+          </select>
+        </div>
+        <div>
+          <label>مدة الدور (ثواني)</label>
+          <select id="turnSeconds">
+            <option>30</option><option selected>60</option><option>90</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="card" style="flex:1;min-width:280px">
+        <h3>الفريق 1</h3>
+        <label>اسم الفريق</label>
+        <input id="team1Name" type="text" placeholder="مثال: الصقور" value="الفريق 1" />
+        <div id="team1Players" class="stack"></div>
+      </div>
+      <div class="card" style="flex:1;min-width:280px">
+        <h3>الفريق 2</h3>
+        <label>اسم الفريق</label>
+        <input id="team2Name" type="text" placeholder="مثال: النمور" value="الفريق 2" />
+        <div id="team2Players" class="stack"></div>
+      </div>
+    </div>
+
+    <div class="footerBar">
+      <div class="muted">ادخل أسماء اللاعبين ثم ابدأ.</div>
+      <button id="startBtn" class="accent">ابدأ اللعبة</button>
+    </div>
+  </div>
+
+  <!-- اللعب -->
+  <div id="game" style="display:none" class="stack">
+    <div class="card">
+      <div class="footerBar">
+        <div id="roundInfo" class="muted">الجولة: - / -</div>
+        <div id="timerWrap">الوقت: <span id="timer">60</span> ثانية</div>
+      </div>
+      <div id="questionBox">
+        <h2 id="questionText">—</h2>
+        <div id="categoryButtons"></div>
+      </div>
+      <div id="playerInputs"></div>
+      <div class="sep"></div>
+      <div id="results"></div>
+      <div class="footerBar">
+        <div id="scoreBoard" class="muted">النقاط: —</div>
+        <button id="nextBtn" style="display:none">التالي</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// --------- بيانات الأسئلة (≈15 لكل فئة) ----------
+const allQuestions = {
+  "فن خيالي":[
+    {q:"في Game of Thrones، من لُقِّب بـ ملك الشمال؟",a:"جون سنو"},
+    {q:"في Breaking Bad، الاسم الحقيقي لهيزنبرغ هو...",a:"والتر وايت"},
+    {q:"في Stranger Things، اسم البلدة التي تدور فيها الأحداث:",a:"هوكينز"},
+    {q:"في Lord of the Rings، حامل الخاتم الواحد:",a:"فرودو"},
+    {q:"في Harry Potter، اسم المدرسة السحرية:",a:"هوغورتس"},
+    {q:"في Attack on Titan، اسم المدينة خلف الأسوار الأولى:",a:"شيغانشينا"},
+    {q:"في One Piece، اسم قرصان القبعة القشية:",a:"لوفي"},
+    {q:"في Naruto، اسم وحش الذيول في ناروتو:",a:"كوراما"},
+    {q:"في The Witcher، اسم الساحر الصياد:",a:"جيرالت"},
+    {q:"في Game of Thrones، اسم والد دينيرس:",a:"إيريس تارغاريان"},
+    {q:"في Death Note، اسم الشينيغامي:",a:"ريوك"},
+    {q:"في Demon Slayer، اسم السيف الذي يستخدمه تانجيرو:",a:"نيتشيرين"},
+    {q:"في Vikings، اسم البطل التاريخي:",a:"راجنار لوثبروك"},
+    {q:"في Peaky Blinders، اسم العائلة:",a:"شيلبي"},
+    {q:"في The Mandalorian، اسم الطفل الشهير:",a:"جروجو"}
+  ],
+  "معلومات عامة":[
+    {q:"عاصمة فرنسا:",a:"باريس"},
+    {q:"أكبر محيط في العالم:",a:"المحيط الهادئ"},
+    {q:"عدد قارات العالم:",a:"7"},
+    {q:"أسرع حيوان بري:",a:"الفهد"},
+    {q:"أطول نهر في العالم:",a:"النيل"},
+    {q:"اللغة الرسمية في البرازيل:",a:"البرتغالية"},
+    {q:"أكبر دولة مساحة:",a:"روسيا"},
+    {q:"صاحب مسرحية روميو وجولييت:",a:"شكسبير"},
+    {q:"عاصمة اليابان:",a:"طوكيو"},
+    {q:"السنة الكبيسة فيها كم يوم:",a:"366"},
+    {q:"مخترع المصباح الكهربائي:",a:"توماس إديسون"},
+    {q:"الكوكب الأقرب للشمس:",a:"عطارد"},
+    {q:"عنصر الحديد رمزه:",a:"Fe"},
+    {q:"عاصمة إسبانيا:",a:"مدريد"},
+    {q:"أكبر بحيرة عَذبة سطحية:",a:"سوبيريور"}
+  ],
+  "دين":[
+    {q:"عدد الصلوات المفروضة يوميًا:",a:"5"},
+    {q:"أول سورة في المصحف:",a:"الفاتحة"},
+    {q:"النبي الذي ابتلعه الحوت:",a:"يونس"},
+    {q:"القبلة التي يتجه إليها المسلمون:",a:"الكعبة"},
+    {q:"عدد أركان الإسلام:",a:"5"},
+    {q:"الركن الثالث من أركان الإسلام:",a:"الصوم"},
+    {q:"الشهر الذي يصام:",a:"رمضان"},
+    {q:"الزكاة تُعد من:",a:"أركان الإسلام"},
+    {q:"الحج يكون إلى:",a:"مكة"},
+    {q:"خاتم الأنبياء:",a:"محمد"},
+    {q:"عدد ركعات صلاة الفجر:",a:"2"},
+    {q:"كتاب المسلمين:",a:"القرآن"},
+    {q:"ليلة خيرٌ من ألف شهر:",a:"ليلة القدر"},
+    {q:"أول مسجد في الإسلام:",a:"قباء"},
+    {q:"صلاة الجماعة فضلها على صلاة الفرد:",a:"سبع وعشرون درجة"}
+  ],
+  "علوم":[
+    {q:"رمز الهيدروجين:",a:"H"},
+    {q:"الكوكب الأحمر:",a:"المريخ"},
+    {q:"جهاز ضخ الدم:",a:"القلب"},
+    {q:"أكبر كوكب:",a:"المشتري"},
+    {q:"وحدة قياس القوة:",a:"نيوتن"},
+    {q:"الغاز الرئيسي في التنفس:",a:"الأكسجين"},
+    {q:"الصيغة الكيميائية للماء:",a:"H2O"},
+    {q:"سرعة الضوء تقريبًا (م/ث):",a:"299792458"},
+    {q:"علم دراسة الأجرام السماوية:",a:"علم الفلك"},
+    {q:"أصغر وحدة بنائية للكائن الحي:",a:"الخلية"},
+    {q:"العظم الأطول في جسم الإنسان:",a:"عظم الفخذ"},
+    {q:"وحدة قياس الطاقة:",a:"جول"},
+    {q:"الكوكب ذي الحلقات البارزة:",a:"زحل"},
+    {q:"مَن المسؤول عن المناعة في الدم:",a:"كريات الدم البيضاء"},
+    {q:"مقياس شدة الزلازل:",a:"ريختر"}
+  ],
+  "جغرافيا":[
+    {q:"أطول نهر في العالم:",a:"النيل"},
+    {q:"أكبر قارة:",a:"آسيا"},
+    {q:"عاصمة كندا:",a:"أوتاوا"},
+    {q:"أعلى قمة جبلية:",a:"إيفرست"},
+    {q:"أصغر دولة في العالم:",a:"الفاتيكان"},
+    {q:"البُقعة الشهيرة في البرازيل للكرنفال:",a:"ريو دي جانيرو"},
+    {q:"عاصمة تركيا:",a:"أنقرة"},
+    {q:"صحراء شهيرة في شمال أفريقيا:",a:"الصحراء الكبرى"},
+    {q:"عاصمة أستراليا:",a:"كانبيرا"},
+    {q:"نهر يمر بباريس:",a:"السين"},
+    {q:"مدينة إسبانية مشهورة بالفلامنكو:",a:"إشبيلية"},
+    {q:"عاصمة المملكة المغربية:",a:"الرباط"},
+    {q:"بحر يفصل أفريقيا عن أوروبا:",a:"المتوسط"},
+    {q:"جبل بين فرنسا وإيطاليا:",a:"مون بلان"},
+    {q:"أكبر جزيرة في العالم:",a:"غرينلاند"}
+  ],
+  "رياضة":[
+    {q:"عدد لاعبي فريق كرة القدم داخل الملعب:",a:"11"},
+    {q:"من فاز بكأس العالم 2018:",a:"فرنسا"},
+    {q:"مدة مباراة كرة السلة (دقائق):",a:"48"},
+    {q:"عدد أشواط مباراة كرة القدم:",a:"2"},
+    {q:"أسرع عدّاء في العالم:",a:"يوسين بولت"},
+    {q:"رياضة تُلعب بمضرب وكرة صفراء:",a:"التنس"},
+    {q:"اللعبة التي تُسجَّل فيها الأهداف بالقدم:",a:"كرة القدم"},
+    {q:"عدد لاعبي كرة اليد لكل فريق داخل الملعب:",a:"7"},
+    {q:"أرضية سباقات العدو تسمى:",a:"مضمار"},
+    {q:"الكأس الأشهر للأندية الأوروبية:",a:"دوري أبطال أوروبا"},
+    {q:"الرمية الثلاثية في أي لعبة:",a:"كرة السلة"},
+    {q:"رياضة أولمبية تستخدم السيف:",a:"المبارزة"},
+    {q:"البطولة الكبرى في التنس على الأعشاب:",a:"ويمبلدون"},
+    {q:"اللعب بالخشبات والكرة الحمراء:",a:"البولينج"},
+    {q:"اللعبة ذات الشبكة العالية والكرة الخفيفة:",a:"الطائرة"}
+  ]
+};
+
+// --------- الحالة العامة ----------
+let roundsTotal = 10;
+let teamSize = 2;
+let turnSeconds = 60;
+
+let teams = [
+  { name:"الفريق 1", players:[], scores:[], teamScore:0 },
+  { name:"الفريق 2", players:[], scores:[], teamScore:0 }
+];
+
+let currentRound = 1;
+let settingTeamIdx = 0;        // الفريق الذي يختار الفئة ويكتب الهبدات
+let answeringTeamIdx = 1;      // الفريق الذي يختار إجابة واحدة
+let phase = "chooseCategory";  // chooseCategory -> collectHebdas -> teamAnswer -> results
+let timerInterval = null;
+let timeLeft = 60;
+
+let currentCategory = "";
+let currentQuestion = null;
+let usedQuestions = {}; // منع التكرار داخل الجلسة: map لكل فئة
+
+let hebdas = [];        // [{playerIndex, text}]
+let choices = [];       // [ ...hebdas.text, correct ]
+let teamAnswer = null;  // اختيار الفريق المجيب
+
+// --------- تهيئة واجهة الإعداد ---------
+const roundSelect = document.getElementById('roundCount');
+for(let i=1;i<=30;i++){ const opt=document.createElement('option'); opt.value=i; opt.textContent=i; if(i===10) opt.selected=true; roundSelect.appendChild(opt); }
+
+const teamSizeSelect = document.getElementById('teamSize');
+const team1PlayersDiv = document.getElementById('team1Players');
+const team2PlayersDiv = document.getElementById('team2Players');
+
+function renderPlayerInputs(){
+  const size = parseInt(teamSizeSelect.value,10);
+  team1PlayersDiv.innerHTML = "";
+  team2PlayersDiv.innerHTML = "";
+  for(let i=0;i<size;i++){
+    const inp1 = document.createElement('input'); inp1.type="text"; inp1.placeholder=`لاعب ${i+1}`; inp1.value=`لاعب ${i+1}`;
+    const inp2 = document.createElement('input'); inp2.type="text"; inp2.placeholder=`لاعب ${i+1}`; inp2.value=`لاعب ${i+1}`;
+    team1PlayersDiv.appendChild(inp1);
+    team2PlayersDiv.appendChild(inp2);
+  }
+}
+teamSizeSelect.addEventListener('change', renderPlayerInputs);
+renderPlayerInputs();
+
+// --------- بدء اللعبة ---------
+document.getElementById('startBtn').addEventListener('click', () => {
+  roundsTotal = parseInt(document.getElementById('roundCount').value,10);
+  teamSize = parseInt(document.getElementById('teamSize').value,10);
+  turnSeconds = parseInt(document.getElementById('turnSeconds').value,10);
+
+  teams[0].name = document.getElementById('team1Name').value.trim() || "الفريق 1";
+  teams[1].name = document.getElementById('team2Name').value.trim() || "الفريق 2";
+
+  teams[0].players = Array.from(team1PlayersDiv.querySelectorAll('input')).slice(0,teamSize).map(i=>i.value.trim()||"بدون اسم");
+  teams[1].players = Array.from(team2PlayersDiv.querySelectorAll('input')).slice(0,teamSize).map(i=>i.value.trim()||"بدون اسم");
+
+  teams[0].scores = new Array(teamSize).fill(0);
+  teams[1].scores = new Array(teamSize).fill(0);
+  teams[0].teamScore = 0; teams[1].teamScore = 0;
+
+  currentRound = 1;
+  settingTeamIdx = 0; answeringTeamIdx = 1; phase = "chooseCategory";
+  usedQuestions = {};
+  hebdas = []; choices = []; teamAnswer = null;
+
+  document.getElementById('setup').style.display='none';
+  document.getElementById('game').style.display='block';
+  updateRoundAndScores();
+  showCategoryButtons();
+  document.getElementById('questionText').textContent = `دور ${teams[settingTeamIdx].name}: اختر الفئة`;
+  stopTimer(); setTimerText("-");
+});
+
+// --------- عرض المعلومات أعلى الشاشة ---------
+function updateRoundAndScores(){
+  document.getElementById('roundInfo').textContent = `الجولة: ${currentRound} / ${roundsTotal}`;
+  const t1 = `${teams[0].name}: فريق=${teams[0].teamScore} | لاعبين=[${teams[0].players.map((p,i)=>`${p}:${teams[0].scores[i]}`).join(" | ")}]`;
+  const t2 = `${teams[1].name}: فريق=${teams[1].teamScore} | لاعبين=[${teams[1].players.map((p,i)=>`${p}:${teams[1].scores[i]}`).join(" | ")}]`;
+  document.getElementById('scoreBoard').textContent = t1 + " || " + t2;
+}
+
+// --------- الأزرار الخاصة بالفئات ---------
+function showCategoryButtons(){
+  const box = document.getElementById('categoryButtons');
+  box.innerHTML = "";
+  Object.keys(allQuestions).forEach(cat=>{
+    const b = document.createElement('button');
+    b.className="chip";
+    b.textContent = cat;
+    b.addEventListener('click', ()=> pickQuestion(cat));
+    box.appendChild(b);
+  });
+}
+
+// --------- اختيار سؤال عشوائي من الفئة (بدون تكرار) ---------
+function pickQuestion(category){
+  currentCategory = category;
+  const pool = allQuestions[category];
+  usedQuestions[category] = usedQuestions[category] || new Set();
+
+  // فلترة غير المستخدمة
+  const candidates = pool.filter((_,idx)=>!usedQuestions[category].has(idx));
+  if(candidates.length===0){
+    alert("استهلكتم كل الأسئلة في هذه الفئة! اختر فئة أخرى.");
+    showCategoryButtons();
+    return;
+  }
+  const rndIndexInCandidates = Math.floor(Math.random()*candidates.length);
+  const chosen = candidates[rndIndexInCandidates];
+  // نحتاج معرفة index الأصلي لتسجيله في used
+  const originalIndex = pool.findIndex(x=>x===chosen);
+  usedQuestions[category].add(originalIndex);
+
+  currentQuestion = { question: chosen.q, answer: chosen.a };
+  phase = "collectHebdas";
+  hebdas = [];
+  choices = [];
+  teamAnswer = null;
+  document.getElementById('categoryButtons').innerHTML = "";
+  document.getElementById('results').innerHTML = "";
+
+  // أول لاعب من فريق الهبد
+  document.getElementById('questionText').textContent =
+    `سؤال (${currentCategory}): ${currentQuestion.question}`;
+  showNextHebdaInput(0);
+}
+
+// --------- مؤقّت ---------
+function startTimer(seconds, onTimeout){
+  timeLeft = seconds;
+  setTimerText(timeLeft);
+  stopTimer();
+  timerInterval = setInterval(()=>{
+    timeLeft--;
+    setTimerText(timeLeft);
+    if(timeLeft<=0){
+      stopTimer();
+      onTimeout && onTimeout();
+    }
+  },1000);
+}
+function stopTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval=null; } }
+function setTimerText(t){ document.getElementById('timer').textContent = (t===undefined? "-": t); }
+
+// --------- إدخال هبدة لاعب (بالتسلسل لكل لاعبي فريق الهبد) ---------
+function showNextHebdaInput(playerIdx){
+  const wrap = document.getElementById('playerInputs');
+  wrap.innerHTML = "";
+  const team = teams[settingTeamIdx];
+
+  if(playerIdx >= team.players.length){
+    // انتهت هبدات الفريق ➜ تكوين الخيارات والانتقال لاختيار إجابة الفريق الآخر
+    buildChoicesAndAskAnswer();
+    return;
+  }
+
+  const name = team.players[playerIdx];
+  const label = document.createElement('h3');
+  label.textContent = `${team.name} • ${name} — اكتب هبدتك (1 لكل لاعب)`;
+  wrap.appendChild(label);
+
+  const inf = document.createElement('div');
+  inf.className = "muted";
+  inf.textContent = "ملاحظة: إن كتبت الإجابة الصحيحة، سيُطلب منك تغييرها إلى هبدة.";
+  wrap.appendChild(inf);
+
+  const inp = document.createElement('input');
+  inp.type="text"; inp.placeholder="اكتب هبدتك هنا...";
+  wrap.appendChild(inp);
+
+  const btn = document.createElement('button');
+  btn.textContent="تأكيد الهبدة";
+  btn.addEventListener('click', submitHebda);
+  wrap.appendChild(btn);
+
+  function submitHebda(){
+    let val = (inp.value||"").trim();
+    if(!val){ val = "—"; }
+    // منع الإجابة الصحيحة
+    if(val.toLowerCase() === String(currentQuestion.answer).trim().toLowerCase()){
+      alert("مبروك، إجابتك صحيحة… لكن لازم تكون هبدة. غيّر إجابتك.");
+      inp.focus(); return;
+    }
+    hebdas.push({ playerIndex: playerIdx, text: val });
+    // التالي
+    showNextHebdaInput(playerIdx+1);
+  }
+
+  startTimer(turnSeconds, ()=>{
+    // انتهى الوقت — نسجّل هبدة فارغة
+    hebdas.push({ playerIndex: playerIdx, text: "—" });
+    showNextHebdaInput(playerIdx+1);
+  });
+}
+
+// --------- تكوين قائمة الاختيارات وطلب إجابة الفريق الآخر (إجابة واحدة فقط) ---------
+function buildChoicesAndAskAnswer(){
+  const wrap = document.getElementById('playerInputs');
+  wrap.innerHTML = "";
+
+  // دمج الهبدات + الإجابة الصحيحة
+  choices = hebdas.map(h=>h.text);
+  if(!choices.some(c=>String(c).toLowerCase()===String(currentQuestion.answer).toLowerCase())){
+    choices.push(currentQuestion.answer);
+  }
+  // إزالة التكرارات البسيطة
+  choices = Array.from(new Set(choices.map(c=>String(c))));
+  choices = shuffle(choices);
+
+  const team = teams[answeringTeamIdx];
+
+  const title = document.createElement('h3');
+  title.textContent = `${team.name} — اختاروا إجابة واحدة فقط (اتفقوا ثم اضغطوا)`;
+  wrap.appendChild(title);
+
+  const listDiv = document.createElement('div');
+  listDiv.className="stack";
+  choices.forEach(choice=>{
+    const d = document.createElement('div'); d.className="choice";
+    const b = document.createElement('button'); b.textContent = choice; b.className="ok";
+    b.addEventListener('click', ()=> submitTeamAnswer(choice));
+    d.appendChild(b);
+    listDiv.appendChild(d);
+  });
+  wrap.appendChild(listDiv);
+
+  startTimer(turnSeconds, ()=>{
+    // انتهى الوقت بدون اختيار — نعتبرهم اختاروا لا شيء
+    submitTeamAnswer("—");
+  });
+
+  function submitTeamAnswer(ch){
+    stopTimer();
+    teamAnswer = ch;
+    scoreRound();
+    showResults();
+  }
+}
+
+// --------- حساب النقاط للجولة ---------
+function scoreRound(){
+  // نقطة للفريق المجيب إن كانت الإجابة صحيحة
+  if(String(teamAnswer).toLowerCase() === String(currentQuestion.answer).toLowerCase()){
+    teams[answeringTeamIdx].teamScore += 1;
+  }
+
+  // إن اختار الفريق المجيب هبدة لاعب معيّن: نقطة لهذا اللاعب
+  const idx = hebdas.findIndex(h=>String(h.text)===String(teamAnswer));
+  if(idx>-1){
+    const bluffOwner = hebdas[idx].playerIndex; // index داخل فريق الهبد
+    teams[settingTeamIdx].scores[bluffOwner] += 1;
+  }
+}
+
+// --------- عرض نتائج الجولة + زر التالي ---------
+function showResults(){
+  const res = document.getElementById('results');
+  const wrap = document.getElementById('playerInputs');
+  wrap.innerHTML = "";
+  res.innerHTML = "";
+
+  const h = document.createElement('h3'); h.textContent="نتائج الجولة:";
+  res.appendChild(h);
+
+  // عرض الهبدات مع أصحابها
+  hebdas.forEach((hbd,i)=>{
+    const d = document.createElement('div'); d.className="item";
+    const ownerName = teams[settingTeamIdx].players[hbd.playerIndex];
+    d.textContent = `هبدة ${i+1} (${ownerName}): "${hbd.text}"`;
+    res.appendChild(d);
+  });
+
+  // الإجابة الصحيحة
+  const dAns = document.createElement('div'); dAns.className="item";
+  dAns.innerHTML = `الإجابة الصحيحة: <strong>${currentQuestion.answer}</strong>`;
+  res.appendChild(dAns);
+
+  // إجابة الفريق المجيب
+  const dTeam = document.createElement('div'); dTeam.className="item";
+  dTeam.innerHTML = `اختيار ${teams[answeringTeamIdx].name}: <strong>${teamAnswer}</strong>`;
+  res.appendChild(dTeam);
+
+  updateRoundAndScores();
+
+  // زر التالي
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.style.display = "inline-block";
+  nextBtn.onclick = nextRound;
+
+  // ضبط النص العلوي
+  document.getElementById('questionText').textContent = `انتهت جولة ${currentRound}.`;
+  setTimerText("-");
+}
+
+// --------- الجولة التالية أو إنهاء اللعبة ---------
+function nextRound(){
+  document.getElementById('results').innerHTML = "";
+  document.getElementById('playerInputs').innerHTML = "";
+  document.getElementById('categoryButtons').innerHTML = "";
+  document.getElementById('nextBtn').style.display="none";
+
+  if(currentRound >= roundsTotal){
+    const winnerText = getWinnerText();
+    alert(`انتهت المباراة!\n${winnerText}`);
+    location.reload();
+    return;
+  }
+
+  currentRound += 1;
+  // تبادل الأدوار
+  settingTeamIdx = (settingTeamIdx===0)?1:0;
+  answeringTeamIdx = (answeringTeamIdx===0)?1:0;
+  phase = "chooseCategory";
+  hebdas = []; choices = []; teamAnswer = null;
+
+  updateRoundAndScores();
+  showCategoryButtons();
+  document.getElementById('questionText').textContent = `دور ${teams[settingTeamIdx].name}: اختر الفئة`;
+  setTimerText("-");
+}
+
+// --------- تحديد الفائز ---------
+function getWinnerText(){
+  const t1 = teams[0].teamScore;
+  const t2 = teams[1].teamScore;
+  if(t1>t2) return `الفائز: ${teams[0].name}`;
+  if(t2>t1) return `الفائز: ${teams[1].name}`;
+  return "النتيجة: تعادل!";
+}
+
+// --------- أدوات ---------
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+</script>
+</body>
+</html>
+
